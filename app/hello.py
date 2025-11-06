@@ -7,6 +7,9 @@ app = Flask(__name__)
 
 notes = []
 recent_users = deque(maxlen=3)
+allowed_tags = {"p", "strong", "em", "a", "code", "pre", "ul", "li"}
+allowed_attrs = {"a": {"href", "title"}}
+
 
 @app.route("/")
 def username():
@@ -29,7 +32,11 @@ def hello():
 def render():
     md = request.form.get("markdown", "")
     rendered = markdown.markdown(md, extensions=["extra", "codehilite"])
-    safe_rendered = nh3.clean(rendered)
+    safe_rendered = nh3.clean(
+        rendered,
+        tags=allowed_tags,
+        attributes=allowed_attrs
+    )
     notes.append(safe_rendered)
     return render_template("markdown.html", rendered=safe_rendered)
 
